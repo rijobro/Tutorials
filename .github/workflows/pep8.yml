@@ -37,3 +37,6 @@ jobs:
     - name: PEP8 check
       run: |
         $(pwd)/runner.sh --no-run
+    - name: Run changed files
+      run: |
+        git diff --name-only "$GITHUB_BASE_REF..$GITHUB_SHA"
