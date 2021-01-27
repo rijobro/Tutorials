@@ -39,7 +39,9 @@ jobs:
         $(pwd)/runner.sh --no-run
     - name: Run changed files
       run: |
-        echo "github base ref: $GITHUB_BASE_REF"
-        echo "github commit: $GITHUB_SHA"
-        echo "github commit: $GITHUB_REF"
-        git diff --name-only "$GITHUB_BASE_REF..$GITHUB_SHA"
+        # echo "github base ref: $GITHUB_BASE_REF"
+        # echo "github commit: $GITHUB_SHA"
+        # echo "github commit: $GITHUB_REF"
+        # git diff --name-only "$GITHUB_BASE_REF..$GITHUB_SHA"
+        git fetch origin master:master
+        git diff --name-only master
