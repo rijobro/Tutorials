@@ -41,4 +41,4 @@ jobs:
       run: |
         echo "github base ref: $GITHUB_BASE_REF"
         echo "github commit: $GITHUB_SHA"
-        # git diff --name-only "$GITHUB_BASE_REF..$GITHUB_SHA"
+        git diff --name-only "$GITHUB_BASE_REF..$GITHUB_SHA"
