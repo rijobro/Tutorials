@@ -30,18 +30,14 @@ jobs:
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ steps.pip-cache.outputs.datew }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip wheel
-        python -m pip install -r requirements.txt
-    - name: PEP8 check
-      run: |
-        $(pwd)/runner.sh --no-run
+    # - name: Install dependencies
+    #   run: |
+    #     python -m pip install --upgrade pip wheel
+    #     python -m pip install -r requirements.txt
+    # - name: PEP8 check
+    #   run: |
+    #     $(pwd)/runner.sh --no-run
     - name: Run changed files
       run: |
-        # echo "github base ref: $GITHUB_BASE_REF"
-        # echo "github commit: $GITHUB_SHA"
-        # echo "github commit: $GITHUB_REF"
-        # git diff --name-only "$GITHUB_BASE_REF..$GITHUB_SHA"
         git fetch origin master:master
-        git diff --name-only master
+        git diff --name-only master | while read line; do [[ $line == *.ipynb ]] && ./runner.sh --file "$line" --no-check; done
