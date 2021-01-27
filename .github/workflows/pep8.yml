@@ -40,4 +40,4 @@ jobs:
     - name: Run changed files
       run: |
         git fetch origin master:master
-        git diff --name-only master | while read line; do [[ $line == *.ipynb ]] && ./runner.sh --file "$line" --no-check; done
+        git diff --name-only master | while read line; do [[ $line == *.ipynb ]] && ./runner.sh --file "$line" --no-checks; done
