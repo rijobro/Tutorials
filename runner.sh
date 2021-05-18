@@ -48,13 +48,14 @@ fi
 
 doChecks=true
 doRun=true
+doQuick=false
 autofix=false
 failfast=false
 pattern="-name \"*\""
 kernelspec="python3"
 
 function print_usage {
-    echo "runner.sh [--no-run] [--no-checks] [--autofix] [-f/--failfast] [-p/--pattern <find pattern>] [-h/--help]"
+    echo "runner.sh [--no-run] [--no-checks] [--quick] [--autofix] [-f/--failfast] [-p/--pattern <find pattern>] [-h/--help]"
     echo            "[-v/--version]"
     echo ""
     echo "MONAI tutorials testing utilities. When running the notebooks, we first search for variables, such as"
@@ -63,6 +64,7 @@ function print_usage {
     echo "Code style check options:"
     echo "    --no-run          : don't run notebooks"
     echo "    --no-checks       : don't run code checks"
+	echo "    --quick           : use this flag to temporarily modify certain variables (e.g., max_epochs) to 1 for increased speed"
     echo "    --autofix         : autofix where possible"
     echo "    -f, --failfast    : stop on first error"
     echo "    -p, --pattern     : pattern of files to be run (added to \`find . -type f -name *.ipynb -and ! -wholename *.ipynb_checkpoints*\`)"
@@ -101,6 +103,9 @@ do
         ;;
         --no-checks)
             doChecks=false
+        ;;
+        --quick)
+            doQuick=true
         ;;
         --autofix)
             autofix=true
@@ -185,7 +190,7 @@ function replace_text {
 
 # Get notebooks (pattern is -name "*" unless user specifies otherwise)
 files=($(echo $pattern | xargs find . -type f -name "*.ipynb" -and ! -wholename "*.ipynb_checkpoints*"))
-if [[ $files == "" ]]; then 
+if [[ $files == "" ]]; then
 	print_error_msg "No files match pattern"
 	exit 1
 fi
@@ -197,7 +202,7 @@ num_successful_tests=0
 num_tested=0
 # on finish
 function finish {
-  	if [[ ${num_successful_tests} -eq ${num_tested} ]]; then 
+  	if [[ ${num_successful_tests} -eq ${num_tested} ]]; then
 		echo -e "\n\n\n${green}Testing finished. All ${num_tested} executed tests passed!${noColor}"
 	else
 		echo -e "\n\n\n${red}Testing finished. ${num_successful_tests} of ${num_tested} executed tests passed!${noColor}"
@@ -267,25 +272,28 @@ for file in "${files[@]}"; do
 		echo Running notebook...
 		notebook=$(cat "$filename")
 
-		# if compulsory keyword, max_epochs, missing...
-		if [[ ! "$notebook" =~ "max_epochs" ]]; then
-			# and notebook isn't in list of those expected to not have that keyword...
-			should_contain_max_epochs=true
-			for e in "${doesnt_contain_max_epochs[@]}"; do
-				[[ "$e" == "$filename" ]] && should_contain_max_epochs=false && break
-			done
-			# then error
-			if [[ $should_contain_max_epochs == true ]]; then
-				print_error_msg "Couldn't find the keyword \"max_epochs\", and the notebook wasn't on the list of expected exemptions (\"doesnt_contain_max_epochs\")."
-				test_fail 1
+		# if notebook speed-up is desired
+		if [ $doQuick = true ]; then
+			# if compulsory keyword, max_epochs, missing...
+			if [[ ! "$notebook" =~ "max_epochs" ]]; then
+				# and notebook isn't in list of those expected to not have that keyword...
+				should_contain_max_epochs=true
+				for e in "${doesnt_contain_max_epochs[@]}"; do
+					[[ "$e" == "$filename" ]] && should_contain_max_epochs=false && break
+				done
+				# then error
+				if [[ $should_contain_max_epochs == true ]]; then
+					print_error_msg "Couldn't find the keyword \"max_epochs\", and the notebook wasn't on the list of expected exemptions (\"doesnt_contain_max_epochs\")."
+					test_fail 1
+				fi
 			fi
-		fi
 
-		# Set some variables to 1 to speed up proceedings
-		strings_to_replace=(max_epochs val_interval disc_train_interval disc_train_steps)
-		for s in "${strings_to_replace[@]}"; do
-			replace_text
-		done
+			# Set some variables to 1 to speed up proceedings
+			strings_to_replace=(max_epochs val_interval disc_train_interval disc_train_steps)
+			for s in "${strings_to_replace[@]}"; do
+				replace_text
+			done
+		fi
 
 		# echo "$notebook" > "${base_path}/debug_notebook.ipynb"
 		time out=$(echo "$notebook" | papermill --progress-bar -k "$kernelspec")
